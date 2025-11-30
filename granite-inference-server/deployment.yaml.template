@@ -6,6 +6,9 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: granite
+    component: vllm-api
+    app.kubernetes.io/part-of: 'VLLM-RHAIIS'
+    app.openshift.io/runtime: python
 spec:
   replicas: 1
   selector:
@@ -35,29 +38,52 @@ spec:
               readOnly: true
               mountPath: /auth
           terminationMessagePolicy: File
-          image: 'ghcr.io/oras-project/oras:v1.2.0'
+          image: 'ghcr.io/oras-project/oras:v1.3.0'
           args:
             - |
               set -e
               HF_DIR=/model/hf
 
               if [ -z "$(ls -A $HF_DIR 2>/dev/null)" ]; then
-                echo "Pulling Granite OCI artifact..."
+                echo ""
+                echo "Pulling ${MODEL_ID} OCI artifact ..."
+                echo "model source is: ${MODEL_PULL_URL}"
+                echo ""
+
                 mkdir -p /model/tmp
-                oras pull registry.redhat.io/rhelai1/granite-3-1-8b-instruct-quantized-w8a8:1.5 --output /model/tmp
+                oras pull ${MODEL_PULL_URL} --output /model/tmp
+                # oras copy ${MODEL_PULL_URL} --to-oci-layout /model/tmp
 
+                echo ""
                 echo "Listing pulled contents:"
-                ls -R /model/tmp
+                echo ""
 
+                ls -R /model/tmp
+                
+                echo ""
                 echo "Copying files into $HF_DIR..."
+                echo ""
+
                 mkdir -p $HF_DIR
                 cp -r /model/tmp/* $HF_DIR
-
+                
+                echo ""
                 echo "Contents in $HF_DIR after copy:"
+                echo ""
+
                 ls -R $HF_DIR
+
+                echo ""
+                df -h
+                echo ""
+
               else
+                echo ""
                 echo "Model already present — skipping pull."
+                echo ""
+                ls -R $HF_DIR
               fi
+
       serviceAccountName: default
       schedulerName: default-scheduler
       terminationGracePeriodSeconds: 30
@@ -94,14 +120,14 @@ spec:
                 name: hf-secret
             - secretRef:
                 name: docker-secret
-          image: 'registry.redhat.io/rhaiis/vllm-cuda-rhel9@sha256:a6645a8e8d7928dce59542c362caf11eca94bb1b427390e78f0f8a87912041cd'
+          image: '${RHIIS_IMAGE}'
           args:
             - '-m'
             - vllm.entrypoints.openai.api_server
             - '--port=8000'
             - '--model=/model/hf'
-            - '--served-model-name=granite-3-1-8b-instruct-quantized-w8a8'
-            - '--max-model-len=75888'
+            - '--served-model-name=${MODEL_ID}'
+            - '--max-model-len=32768'
       serviceAccount: default
       volumes:
         - name: model-volume
