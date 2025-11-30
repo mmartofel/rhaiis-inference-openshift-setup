@@ -1,0 +1,1 @@
+# rhaiis-inference-openshift-setup
