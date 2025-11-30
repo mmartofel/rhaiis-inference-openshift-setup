@@ -1,0 +1,5 @@
+.vscode/
+user-values.env
+*.local
+.DS_Store
+
