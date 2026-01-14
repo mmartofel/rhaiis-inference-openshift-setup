@@ -6,7 +6,7 @@ export CLUSTER_DOMAIN_NAME=`oc get ingresses.config/cluster -o jsonpath='{.spec.
 set +a
 
 curl -X POST \
-  https://granite-${NAMESPACE}.${CLUSTER_DOMAIN_NAME}/v1/chat/completions \
+   https://granite-${NAMESPACE}.${CLUSTER_DOMAIN_NAME}/v1/chat/completions \
   -H 'Authorization: Bearer fake-api-key' \
   -H 'Content-Type: application/json' \
   -d '{
